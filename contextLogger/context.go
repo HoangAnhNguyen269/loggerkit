@@ -3,6 +3,7 @@ package contextLogger
 import (
 	"context"
 	"net/http"
+	"sync"
 
 	logger "github.com/HoangAnhNguyen269/loggerkit"
 	"github.com/HoangAnhNguyen269/loggerkit/provider/zapx"
@@ -26,7 +27,51 @@ func FromContext(ctx context.Context) logger.Logger {
 	if l, ok := ctx.Value(ctxKey{}).(logger.Logger); ok && l != nil {
 		return l.WithContext(ctx)
 	}
-	return zapx.NewDefaultLogger().WithContext(ctx)
+	return getFallback().WithContext(ctx)
+}
+
+// --- Fallback (zapx) as lazy singleton ---
+var (
+	fbOnce   sync.Once
+	fbMu     sync.RWMutex
+	fbLogger logger.Logger // may be set by SetFallbackLogger; else lazy zapx default
+)
+
+// Allow app/tests to override fallback (e.g., nop logger in tests)
+func SetFallbackLogger(l logger.Logger) {
+	fbMu.Lock()
+	fbLogger = l
+	fbMu.Unlock()
+}
+
+func getFallback() logger.Logger {
+	fbMu.RLock()
+	l := fbLogger
+	fbMu.RUnlock()
+	if l != nil {
+		return l
+	}
+	fbOnce.Do(func() {
+		// create exactly once
+		fbMu.Lock()
+		fbLogger = zapx.NewDefaultLogger()
+		fbMu.Unlock()
+	})
+	fbMu.RLock()
+	l = fbLogger
+	fbMu.RUnlock()
+	return l
+}
+
+// Optional: let app close fallback on shutdown
+func CloseFallback(ctx context.Context) error {
+	fbMu.RLock()
+	l := fbLogger
+	fbMu.RUnlock()
+	if l != nil {
+		return l.Close(ctx)
+	}
+	return nil
 }
 
 // HTTPMiddleware creates middleware that extracts request/user IDs from headers and traces
@@ -35,22 +80,17 @@ func HTTPMiddleware(contextKeys logger.ContextKeys) func(http.Handler) http.Hand
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 
-			// Extract request ID from header
-			if contextKeys.RequestIDHeader != "" {
+			if contextKeys.RequestIDKey != nil && contextKeys.RequestIDHeader != "" {
 				if requestID := r.Header.Get(contextKeys.RequestIDHeader); requestID != "" {
 					ctx = context.WithValue(ctx, contextKeys.RequestIDKey, requestID)
 				}
 			}
 
-			// Extract user ID from header
-			if contextKeys.UserIDHeader != "" {
+			if contextKeys.UserIDKey != nil && contextKeys.UserIDHeader != "" {
 				if userID := r.Header.Get(contextKeys.UserIDHeader); userID != "" {
 					ctx = context.WithValue(ctx, contextKeys.UserIDKey, userID)
 				}
 			}
-
-			// OpenTelemetry trace information is automatically extracted by the logger
-			// via trace.SpanContextFromContext(ctx) in WithContext method
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
