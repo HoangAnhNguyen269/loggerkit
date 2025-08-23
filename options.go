@@ -32,7 +32,7 @@ type ElasticSink struct {
 	CloudID       string        // Cloud ID for Elastic Cloud
 	Index         string        // Index pattern (default "<service>-%Y.%m.%d")
 	FlushInterval time.Duration // How often to flush batches (default 2s)
-	BulkActions   int           // Number of actions before flush (default 5000)
+	BulkActions   int           // DEPRECATED/IGNORED with go-elasticsearch; use FlushInterval/FlushBytes
 	BulkSizeBytes int           // Size in bytes before flush (0 = disabled)
 	Retry         Retry         // Retry configuration
 
@@ -71,17 +71,23 @@ type MetricsOptions struct {
 
 // Options represents the complete logger configuration
 type Options struct {
-	Env          string         // Environment: "dev" or "prod"
-	Service      string         // Service name
-	Level        string         // Log level: "debug", "info", "warn", "error"
-	TimeFormat   string         // Time format (default RFC3339Nano)
-	EnableCaller bool           // Include caller information
-	StacktraceAt string         // Level at which to include stacktrace
-	Sampling     *Sampling      // Sampling configuration
-	File         *FileSink      // File sink configuration
-	Elastic      *ElasticSink   // Elasticsearch sink configuration
-	Context      ContextKeys    // Context extraction configuration
-	Metrics      MetricsOptions // Metrics configuration
+	Env            string         // Environment: "dev" or "prod" //todo: enum
+	Service        string         // Service name
+	Level          string         // Log level: "debug", "info", "warn", "error" //todo:enum
+	TimeFormat     string         // Time format (default RFC3339Nano)
+	EnableCaller   bool           // Include caller information
+	StacktraceAt   string         // Level at which to include stacktrace
+	Sampling       *Sampling      // Sampling configuration
+	DisableConsole bool           // default: false (console bật mặc định)
+	File           *FileSink      // File sink configuration
+	Elastic        *ElasticSink   // Elasticsearch sink configuration
+	Context        ContextKeys    // Context extraction configuration
+	Metrics        MetricsOptions // Metrics configuration
+
+	// FactoryRegistry allows injecting custom factories for testing
+	// If nil, uses the global registry from provider package
+	// Using interface{} to avoid circular imports
+	FactoryRegistry interface{ Factories() []interface{} }
 }
 
 // Option is a functional option for configuring the logger
@@ -127,6 +133,10 @@ func WithSampling(sampling Sampling) Option {
 	return func(o *Options) {
 		o.Sampling = &sampling
 	}
+}
+
+func WithConsoleDisabled() Option {
+	return func(o *Options) { o.DisableConsole = true }
 }
 
 // WithFile sets the file sink configuration

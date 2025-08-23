@@ -3,11 +3,13 @@ package zapx
 import (
 	"context"
 	"fmt"
+	"os"
+	"time"
+
 	logger "github.com/HoangAnhNguyen269/loggerkit"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"time"
 )
 
 // Ensure zapAdapter implements Logger
@@ -80,12 +82,7 @@ func NewWithOptions(opts logger.Options) (logger.Logger, error) {
 	// Create the core
 	var core zapcore.Core
 	if len(cores) == 0 {
-		// Fallback to console if no cores configured
-		core = zapcore.NewCore(
-			createEncoder(encCfg, opts.Env == "prod"),
-			zapcore.Lock(zapcore.AddSync(zapcore.AddSync(&consoleWriter{}))),
-			lvl,
-		)
+		return nil, fmt.Errorf("no log sinks configured: console disabled and no other sinks enabled")
 	} else if len(cores) == 1 {
 		core = cores[0]
 	} else {
@@ -94,7 +91,11 @@ func NewWithOptions(opts logger.Options) (logger.Logger, error) {
 
 	// Apply sampling if configured
 	if opts.Sampling != nil {
-		core = zapcore.NewSampler(core, time.Second, opts.Sampling.Initial, opts.Sampling.Thereafter)
+		core = zapcore.NewSamplerWithOptions(
+			core, time.Second,
+			opts.Sampling.Initial,
+			opts.Sampling.Thereafter,
+		)
 	}
 
 	// Create zap logger options
@@ -299,4 +300,11 @@ func toZapLevel(lvl logger.Level) zapcore.Level {
 	default:
 		return zapcore.InfoLevel
 	}
+}
+
+// fallbackConsoleWriter is used as a fallback when no cores are configured
+type fallbackConsoleWriter struct{}
+
+func (cw *fallbackConsoleWriter) Write(p []byte) (int, error) {
+	return os.Stdout.Write(p)
 }
