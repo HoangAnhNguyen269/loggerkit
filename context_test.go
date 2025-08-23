@@ -18,7 +18,15 @@ import (
 // C) Context & Middleware
 
 func TestHTTPMiddlewareDefault(t *testing.T) {
-	log, err := logger.NewProduction()
+	// Create logger with matching context keys
+	contextKeys := logger.ContextKeys{
+		RequestIDKey:    "request_id",
+		UserIDKey:       "user_id",
+		RequestIDHeader: "X-Request-ID",
+		UserIDHeader:    "X-User-ID",
+	}
+
+	log, err := logger.NewProduction(logger.WithContext(contextKeys))
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
@@ -26,13 +34,8 @@ func TestHTTPMiddlewareDefault(t *testing.T) {
 
 	var capturedOutput string
 
-	// Create middleware with default context keys
-	middleware := contextLogger.HTTPMiddleware(logger.ContextKeys{
-		RequestIDKey:    "request_id",
-		UserIDKey:       "user_id",
-		RequestIDHeader: "X-Request-ID",
-		UserIDHeader:    "X-User-ID",
-	})
+	// Create middleware with same context keys
+	middleware := contextLogger.HTTPMiddleware(contextKeys)
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Store logger in request context
@@ -122,7 +125,10 @@ func TestOpenTelemetryTraceCorrelation(t *testing.T) {
 
 func TestFieldMergingPriority(t *testing.T) {
 	output, err := testutil.CaptureStdout(func() {
-		log, err := logger.NewProduction()
+		// Create logger with context keys configured
+		log, err := logger.NewProduction(logger.WithContext(logger.ContextKeys{
+			RequestIDKey: "request_id",
+		}))
 		if err != nil {
 			t.Fatalf("Failed to create logger: %v", err)
 		}

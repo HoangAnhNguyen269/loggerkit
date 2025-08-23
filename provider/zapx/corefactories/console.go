@@ -58,8 +58,6 @@ func (cw *consoleWriter) Write(p []byte) (int, error) {
 	n, err := os.Stdout.Write(p)
 	if err != nil && cw.metrics != nil {
 		cw.metrics.RecordLogDropped("console", "write_error")
-	} else if cw.metrics != nil {
-		cw.metrics.RecordLogWritten("info", "console") // We don't have level context here
 	}
 	return n, err
 }

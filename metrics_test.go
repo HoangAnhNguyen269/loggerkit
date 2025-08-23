@@ -36,6 +36,31 @@ func TestMetricsWrittenByLevelAndSink(t *testing.T) {
 		registry.MustRegister(collector)
 	}
 
+	// Take baseline metrics before logging (to handle cross-test contamination)
+	baselineMetrics, err := registry.Gather()
+	if err != nil {
+		t.Fatalf("Failed to gather baseline metrics: %v", err)
+	}
+
+	baseline := make(map[string]float64)
+	for _, mf := range baselineMetrics {
+		if mf.GetName() == "logs_written_total" {
+			for _, metric := range mf.GetMetric() {
+				var level, sink string
+				for _, label := range metric.GetLabel() {
+					if label.GetName() == "level" {
+						level = label.GetValue()
+					}
+					if label.GetName() == "sink" {
+						sink = label.GetValue()
+					}
+				}
+				key := level + "_" + sink
+				baseline[key] = metric.GetCounter().GetValue()
+			}
+		}
+	}
+
 	// Generate some log entries
 	log.Info("Info message")
 	log.Error("Error message")
@@ -44,7 +69,7 @@ func TestMetricsWrittenByLevelAndSink(t *testing.T) {
 	// Give metrics time to be recorded
 	time.Sleep(100 * time.Millisecond)
 
-	// Gather metrics
+	// Gather metrics after logging
 	metricFamilies, err := registry.Gather()
 	if err != nil {
 		t.Fatalf("Failed to gather metrics: %v", err)
@@ -63,13 +88,14 @@ func TestMetricsWrittenByLevelAndSink(t *testing.T) {
 		t.Fatal("logs_written_total metric not found")
 	}
 
-	// Verify metrics by level and sink
-	expectedMetrics := map[string]float64{
-		"info_console":  1,
-		"error_console": 1,
-		"warn_console":  1,
+	// Verify metrics by calculating the difference from baseline
+	expectedIncrements := map[string]float64{
+		"info_zap":  1,
+		"error_zap": 1,
+		"warn_zap":  1,
 	}
 
+	actualIncrements := make(map[string]float64)
 	for _, metric := range logsWrittenMetric.GetMetric() {
 		var level, sink string
 		for _, label := range metric.GetLabel() {
@@ -82,11 +108,15 @@ func TestMetricsWrittenByLevelAndSink(t *testing.T) {
 		}
 
 		key := level + "_" + sink
-		expectedValue := expectedMetrics[key]
 		actualValue := metric.GetCounter().GetValue()
+		baselineValue := baseline[key]
+		actualIncrements[key] = actualValue - baselineValue
+	}
 
-		if actualValue != expectedValue {
-			t.Errorf("Expected %s metric to be %f, got %f", key, expectedValue, actualValue)
+	for key, expectedIncrement := range expectedIncrements {
+		actualIncrement := actualIncrements[key]
+		if actualIncrement != expectedIncrement {
+			t.Errorf("Expected %s metric to increment by %f, got increment of %f", key, expectedIncrement, actualIncrement)
 		}
 	}
 }

@@ -68,8 +68,6 @@ func (fw *fileWriter) Write(p []byte) (int, error) {
 	n, err := fw.Logger.Write(p)
 	if err != nil && fw.metrics != nil {
 		fw.metrics.RecordLogDropped("file", "write_error")
-	} else if fw.metrics != nil {
-		fw.metrics.RecordLogWritten("info", "file") // We don't have level context here
 	}
 	return n, err
 }

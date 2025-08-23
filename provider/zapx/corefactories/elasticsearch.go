@@ -214,10 +214,7 @@ func (w *elasticsearchWriter) Write(p []byte) (int, error) {
 		Index:  indexName,
 		Body:   bytes.NewReader(enrichedData),
 		OnSuccess: func(ctx context.Context, item esutil.BulkIndexerItem, res esutil.BulkIndexerResponseItem) {
-			if w.metrics != nil {
-				// (không có level ở đây, cân nhắc bỏ nhãn level)
-				w.metrics.RecordLogWritten("info", "elasticsearch")
-			}
+			// Note: Don't record LogsWritten here - MetricsCore wrapper handles that with correct level
 		},
 		OnFailure: func(ctx context.Context, item esutil.BulkIndexerItem, res esutil.BulkIndexerResponseItem, err error) {
 			// Lỗi do ES trả về sau khi Add thành công → không retry được ở đây
@@ -285,6 +282,7 @@ func (w *elasticsearchWriter) writeToDLQ(data []byte, reason string) {
 	// Write to DLQ file
 	w.dlqFile.Write(dlqData)
 	w.dlqFile.Write([]byte("\n"))
+	w.dlqFile.Sync() // Force flush to disk
 }
 
 func generateIndexName(pattern, service string) string {
