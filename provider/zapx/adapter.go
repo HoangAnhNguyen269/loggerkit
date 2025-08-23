@@ -187,6 +187,10 @@ func (l *zapAdapter) Error(msg string, fields ...logger.Field) {
 	l.log(zapcore.ErrorLevel, msg, fields...)
 }
 
+func (l *zapAdapter) Log(level logger.Level, msg string, fields ...logger.Field) {
+	l.log(toZapLevel(level), msg, fields...)
+}
+
 func (l *zapAdapter) With(fields ...logger.Field) logger.Logger {
 	return &zapAdapter{
 		zl:             l.zl.With(toZapFields(fields...)...),
@@ -279,4 +283,20 @@ func toZapFields(fields ...logger.Field) []zap.Field {
 		out = append(out, zap.Any(f.Key, f.Val))
 	}
 	return out
+}
+
+// Map logger.Level -> zapcore.Level (fallback: info)
+func toZapLevel(lvl logger.Level) zapcore.Level {
+	switch lvl {
+	case logger.DebugLevel:
+		return zapcore.DebugLevel
+	case logger.InfoLevel:
+		return zapcore.InfoLevel
+	case logger.WarnLevel:
+		return zapcore.WarnLevel
+	case logger.ErrorLevel:
+		return zapcore.ErrorLevel
+	default:
+		return zapcore.InfoLevel
+	}
 }
