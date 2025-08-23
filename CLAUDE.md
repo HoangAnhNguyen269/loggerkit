@@ -126,3 +126,24 @@ defer zapx.UseFactoryRegistry(corefactories.DefaultRegistry())
 ```
 
 **Metrics Testing**: MetricsCore automatically wraps all factory outputs for consistent per-sink metrics collection.
+
+## Reference Documentation
+
+Comprehensive reference documentation is available in the `/ref` directory:
+
+### Core Documentation
+
+- **[API Reference](ref/api-reference.md)**: Complete public API documentation including Logger interface, field helpers, configuration options, and usage examples
+- **[Architecture Guide](ref/architecture.md)**: Internal architecture documentation covering the provider system, factory pattern, import cycle elimination, and extensibility mechanisms  
+- **[Configuration Reference](ref/configuration.md)**: Comprehensive configuration guide for all sinks, functional options, and environment-specific setups
+- **[Observability Guide](ref/observability.md)**: Production monitoring with Prometheus metrics, distributed tracing, and context correlation
+
+### Quick References
+
+**Getting Started**: Start with [API Reference](ref/api-reference.md) for basic usage patterns and examples.
+
+**Production Setup**: See [Configuration Reference](ref/configuration.md) and [Observability Guide](ref/observability.md) for production deployment.
+
+**Advanced Usage**: Review [Architecture Guide](ref/architecture.md) for extending the library or understanding internal implementation.
+
+**Troubleshooting**: Check the architecture and configuration docs for debugging guidance and common patterns.

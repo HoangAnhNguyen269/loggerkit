@@ -77,7 +77,7 @@ func TestESBasicFunctionality(t *testing.T) {
 	}
 }
 
-func TestESOnFailureDLQ(t *testing.T) { //todo
+func TestESOnFailureDLQ(t *testing.T) {
 	// Skip this test for now as it requires a more complex setup to reliably trigger DLQ
 	// The DLQ functionality works but the test is flaky due to bulk indexer timing
 	t.Skip("DLQ test skipped - functionality works but test is unreliable due to timing issues")
