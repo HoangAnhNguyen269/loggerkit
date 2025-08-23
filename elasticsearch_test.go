@@ -3,6 +3,7 @@ package logger_test
 import (
 	"context"
 	"encoding/json"
+	"github.com/HoangAnhNguyen269/loggerkit/testutil"
 	"os"
 	"strings"
 	"testing"
