@@ -24,6 +24,9 @@ func Duration(key string, val time.Duration) Field {
 func Time(key string, val time.Time) Field {
 	return Field{key, val}
 }
+func Error(err error) Field {
+	return Field{Key: "error", Val: err.Error()}
+}
 
 // F provides field helpers using the new structure
 var F = struct {
