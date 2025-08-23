@@ -35,12 +35,12 @@ func NewProduction(opts ...Option) (Logger, error) {
 func MustNew(cfg *Config) Logger {
 	// Convert legacy Config to new Options
 	opts := Options{
-		Env:          "prod",
+		Env:          EnvProd,
 		Service:      "app",
-		Level:        string(cfg.Level),
+		Level:        cfg.Level,
 		TimeFormat:   "",
 		EnableCaller: true,
-		StacktraceAt: "error",
+		StacktraceAt: ErrorLevel,
 	}
 
 	if cfg.FileConfig != nil {

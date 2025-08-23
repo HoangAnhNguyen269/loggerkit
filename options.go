@@ -71,27 +71,29 @@ type MetricsOptions struct {
 
 // Options represents the complete logger configuration
 type Options struct {
-	Env            string         // Environment: "dev" or "prod" //todo: enum
+	Env            Env            // Environment: dev or prod
 	Service        string         // Service name
-	Level          string         // Log level: "debug", "info", "warn", "error" //todo:enum
+	Level          Level          // Log level: debug, info, warn, error
 	TimeFormat     string         // Time format (default RFC3339Nano)
 	EnableCaller   bool           // Include caller information
-	StacktraceAt   string         // Level at which to include stacktrace
+	StacktraceAt   Level          // Level at which to include stacktrace
 	Sampling       *Sampling      // Sampling configuration
 	DisableConsole bool           // default: false (console bật mặc định)
 	File           *FileSink      // File sink configuration
 	Elastic        *ElasticSink   // Elasticsearch sink configuration
 	Context        ContextKeys    // Context extraction configuration
 	Metrics        MetricsOptions // Metrics configuration
-
-	// FactoryRegistry allows injecting custom factories for testing
-	// If nil, uses the global registry from provider package
-	// Using interface{} to avoid circular imports
-	FactoryRegistry interface{ Factories() []interface{} }
 }
 
 // Option is a functional option for configuring the logger
 type Option func(*Options)
+
+// WithEnv sets the environment
+func WithEnv(env Env) Option {
+	return func(o *Options) {
+		o.Env = env
+	}
+}
 
 // WithService sets the service name
 func WithService(service string) Option {
@@ -101,9 +103,18 @@ func WithService(service string) Option {
 }
 
 // WithLevel sets the log level
-func WithLevel(level string) Option {
+func WithLevel(level Level) Option {
 	return func(o *Options) {
 		o.Level = level
+	}
+}
+
+// WithLevelString sets the log level from string (deprecated: use WithLevel with typed enum)
+func WithLevelString(level string) Option {
+	return func(o *Options) {
+		if v, err := ParseLevel(level); err == nil {
+			o.Level = v
+		}
 	}
 }
 
@@ -122,9 +133,18 @@ func WithCaller(enabled bool) Option {
 }
 
 // WithStacktraceAt sets the level at which stacktraces are included
-func WithStacktraceAt(level string) Option {
+func WithStacktraceAt(level Level) Option {
 	return func(o *Options) {
 		o.StacktraceAt = level
+	}
+}
+
+// WithStacktraceAtString sets the stacktrace level from string (deprecated: use WithStacktraceAt with typed enum)
+func WithStacktraceAtString(level string) Option {
+	return func(o *Options) {
+		if v, err := ParseLevel(level); err == nil {
+			o.StacktraceAt = v
+		}
 	}
 }
 
@@ -170,12 +190,12 @@ func WithMetrics(metrics MetricsOptions) Option {
 // DefaultDevelopmentOptions returns default options for development
 func DefaultDevelopmentOptions() Options {
 	return Options{
-		Env:          "dev",
+		Env:          EnvDev,
 		Service:      "app",
-		Level:        "debug",
+		Level:        DebugLevel,
 		TimeFormat:   time.RFC3339Nano,
 		EnableCaller: true,
-		StacktraceAt: "error",
+		StacktraceAt: ErrorLevel,
 		Sampling:     nil, // No sampling in dev
 		Context: ContextKeys{
 			RequestIDHeader: "X-Request-ID",
@@ -191,12 +211,12 @@ func DefaultDevelopmentOptions() Options {
 // DefaultProductionOptions returns default options for production
 func DefaultProductionOptions() Options {
 	return Options{
-		Env:          "prod",
+		Env:          EnvProd,
 		Service:      "app",
-		Level:        "info",
+		Level:        InfoLevel,
 		TimeFormat:   time.RFC3339Nano,
 		EnableCaller: true,
-		StacktraceAt: "error",
+		StacktraceAt: ErrorLevel,
 		Sampling: &Sampling{
 			Initial:    100,
 			Thereafter: 100,

@@ -41,15 +41,18 @@ type zapAdapter struct {
 // NewWithOptions creates a new logger with the provided options
 func NewWithOptions(opts logger.Options) (logger.Logger, error) {
 	// Parse log level
-	lvl, err := parseLevel(opts.Level)
+	lvl, err := ToZapLevel(opts.Level)
 	if err != nil {
 		return nil, fmt.Errorf("invalid log level %q: %w", opts.Level, err)
 	}
 
 	// Parse stacktrace level
-	stackLvl, err := parseLevel(opts.StacktraceAt)
-	if err != nil {
-		return nil, fmt.Errorf("invalid stacktrace level %q: %w", opts.StacktraceAt, err)
+	stackLvl := zapcore.InvalidLevel
+	if opts.StacktraceAt != "" {
+		stackLvl, err = ToZapLevel(opts.StacktraceAt)
+		if err != nil {
+			return nil, fmt.Errorf("invalid stacktrace level %q: %w", opts.StacktraceAt, err)
+		}
 	}
 
 	// Create encoder config
@@ -155,21 +158,6 @@ func createEncoder(encCfg zapcore.EncoderConfig, isProduction bool) zapcore.Enco
 		return zapcore.NewJSONEncoder(encCfg)
 	}
 	return zapcore.NewConsoleEncoder(encCfg)
-}
-
-func parseLevel(level string) (zapcore.Level, error) {
-	switch level {
-	case "debug":
-		return zapcore.DebugLevel, nil
-	case "info":
-		return zapcore.InfoLevel, nil
-	case "warn", "warning":
-		return zapcore.WarnLevel, nil
-	case "error":
-		return zapcore.ErrorLevel, nil
-	default:
-		return zapcore.InfoLevel, fmt.Errorf("unknown level: %s", level)
-	}
 }
 
 func (l *zapAdapter) Debug(msg string, fields ...logger.Field) {

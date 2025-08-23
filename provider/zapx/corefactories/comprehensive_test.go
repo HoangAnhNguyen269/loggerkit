@@ -34,7 +34,7 @@ func TestConsoleFactoryEnabled(t *testing.T) {
 		{
 			name: "Dev environment default",
 			opts: logger.Options{
-				Env: "dev",
+				Env: logger.EnvDev,
 			},
 			expected: true,
 		},
@@ -75,11 +75,11 @@ func TestConsoleFactoryBuild(t *testing.T) {
 	}{
 		{
 			name: "Development mode",
-			opts: logger.Options{Env: "dev"},
+			opts: logger.Options{Env: logger.EnvDev},
 		},
 		{
 			name: "Production mode",
-			opts: logger.Options{Env: "prod"},
+			opts: logger.Options{Env: logger.EnvProd},
 		},
 	}
 

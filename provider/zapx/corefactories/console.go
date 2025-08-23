@@ -35,7 +35,7 @@ func (cf *ConsoleFactory) Build(encCfg zapcore.EncoderConfig, lvl zapcore.Level,
 	}
 
 	var encoder zapcore.Encoder
-	if opts.Env == "dev" {
+	if opts.Env == logger.EnvDev {
 		// Development: use console encoder for human-readable output
 		encoder = zapcore.NewConsoleEncoder(encCfg)
 	} else {
