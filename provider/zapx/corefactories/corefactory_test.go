@@ -62,16 +62,14 @@ func TestGlobalRegistryInterface(t *testing.T) {
 
 	// Test the global registry interface
 	registry := DefaultRegistry()
-	interfaces := registry.Factories()
+	factories := registry.All()
 
-	if len(interfaces) != 1 {
-		t.Errorf("Expected 1 interface factory, got %d", len(interfaces))
+	if len(factories) != 1 {
+		t.Errorf("Expected 1 factory, got %d", len(factories))
 	}
 
-	// Verify we can cast back to CoreFactory
-	if cf, ok := interfaces[0].(CoreFactory); !ok {
-		t.Errorf("Expected interface to be castable to CoreFactory")
-	} else if cf.Name() != "test" {
-		t.Errorf("Expected factory name to be 'test', got '%s'", cf.Name())
+	// Verify factory
+	if factories[0].Name() != "test" {
+		t.Errorf("Expected factory name to be 'test', got '%s'", factories[0].Name())
 	}
 }

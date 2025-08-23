@@ -5,6 +5,16 @@ import (
 	"time"
 )
 
+// Level định nghĩa cấp độ log
+type Level string
+
+const (
+	DebugLevel Level = "debug"
+	InfoLevel  Level = "info"
+	WarnLevel  Level = "warn"
+	ErrorLevel Level = "error"
+)
+
 // Field là cặp key/value cho structured logging
 type Field struct {
 	Key string
