@@ -266,6 +266,17 @@ func (l *zapAdapter) log(level zapcore.Level, msg string, fields ...logger.Field
 	}
 }
 
+func (a *zapAdapter) WithCallerSkip(delta int) logger.Logger {
+	return &zapAdapter{
+		zl:             a.zl.WithOptions(zap.AddCallerSkip(delta)),
+		closers:        a.closers,
+		metrics:        a.metrics,
+		metricsEnabled: a.metricsEnabled,
+		contextKeys:    a.contextKeys,
+		service:        a.service,
+	}
+}
+
 func toZapFields(fields ...logger.Field) []zap.Field {
 	out := make([]zap.Field, 0, len(fields))
 	for _, f := range fields {
